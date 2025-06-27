@@ -5,7 +5,7 @@ Ce projet fournit un outil pratique et modulable pour migrer vos repositories de
 ## ✨ Fonctionnalités
 
 - **Migration automatique** : Migre tous vos repositories Gitea vers GitHub en une seule commande
-- **🎯 Mode interactif par défaut** : Interface élégante pour sélectionner/déselectionner les repos à migrer
+- **Mode interactif par défaut** : Interface élégante pour sélectionner/déselectionner les repos à migrer
 - **Vision complète** : Voit tous les repositories accessibles (vos repos + ceux d'organisations)
 - **Sélection intelligente** : Vos repositories sont pré-sélectionnés, les autres sont désélectionnés par défaut
 - **Migration sélective** : Choisissez spécifiquement quels repositories migrer en ligne de commande
@@ -76,11 +76,6 @@ Après avoir configuré vos tokens dans le fichier `.env`, utilisez le script de
 ### Migration de repositories spécifiques
 ```bash
 ./run.sh --repos mon-repo autre-repo
-```
-
-### Migration de repositories d'autres propriétaires
-```bash
-./run.sh --repos proprietaire/repo-name
 ```
 
 ### Lister les repositories disponibles
