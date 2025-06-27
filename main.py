@@ -4,8 +4,8 @@ Repository Migration Tool
 
 A flexible tool for migrating repositories between different Git hosting providers.
 Currently supports:
-- Source providers: Gitea
-- Destination providers: GitHub
+- Source providers: Gitea, GitLab
+- Destination providers: GitHub, GitLab
 
 Future providers can be easily added through the extensible provider system.
 """
@@ -21,6 +21,7 @@ from core.migration_engine import MigrationEngine
 from providers.factory import ProviderFactory
 from providers.base import ConfigurationError, ProviderError, MigrationError
 from ui.interactive_selector import select_repositories_interactive
+from ui.provider_selector import select_providers
 
 # Initialize colorama for cross-platform colored output
 init()
@@ -41,21 +42,15 @@ def setup_logging(verbose: bool = False):
 
 def print_banner():
     """Print application banner"""
-    banner = f"""
-{Fore.CYAN}╔═══════════════════════════════════════════════════════════════╗
-║                                                               ║
-║         🚀 Repository Migration Tool 🚀                      ║
-║                                                               ║
-║  Migrate repositories between Git hosting providers          ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝{Style.RESET_ALL}
-"""
-    print(banner)
+    print(f"{Fore.MAGENTA}{'='*60}")
+    print(f"{'🚀 GIT MIGRATION TOOL':^60}")
+    print(f"{'Multi-Provider Repository Migration':^60}")
+    print(f"{'='*60}{Style.RESET_ALL}")
 
 def print_success_summary(results: dict):
     """Print migration results summary"""
-    successful = sum(1 for success in results.values() if success)
     total = len(results)
+    successful = sum(1 for success in results.values() if success)
     
     print(f"\n{Fore.GREEN}{'='*60}")
     print(f"                MIGRATION SUMMARY")
@@ -75,28 +70,36 @@ def create_env_template():
     env_file = Path('.env')
     
     if not env_file.exists():
-        template = """# Source Provider Configuration
-SOURCE_PROVIDER=gitea
-GITEA_URL=https://codefirst.iut.uca.fr/git
-GITEA_TOKEN=your_gitea_personal_access_token
-GITEA_USERNAME=your_gitea_username
+        template = """# Gitea Source Configuration
+GITEA_SOURCE_URL=https://codefirst.iut.uca.fr/git
+GITEA_SOURCE_TOKEN=your_gitea_source_personal_access_token
+GITEA_SOURCE_USERNAME=your_gitea_source_username
 
-# Alternative source provider (GitLab)
-# SOURCE_PROVIDER=gitlab
-# GITLAB_URL=https://gitlab.com
-# GITLAB_TOKEN=your_gitlab_token
-# GITLAB_USERNAME=your_gitlab_username
+# Gitea Destination Configuration
+GITEA_DEST_URL=https://codefirst.iut.uca.fr/git
+GITEA_DEST_TOKEN=your_gitea_dest_personal_access_token
+GITEA_DEST_USERNAME=your_gitea_dest_username
 
-# Destination Provider Configuration
-DESTINATION_PROVIDER=github
+# GitLab Source Configuration
+GITLAB_SOURCE_URL=https://gitlab.com
+GITLAB_SOURCE_TOKEN=your_gitlab_source_token
+GITLAB_SOURCE_USERNAME=your_gitlab_source_username
+
+# GitLab Destination Configuration
+GITLAB_DEST_URL=https://gitlab.com
+GITLAB_DEST_TOKEN=your_gitlab_dest_token
+GITLAB_DEST_USERNAME=your_gitlab_dest_username
+
+# GitHub Configuration (same for source and destination - only one instance)
 GITHUB_TOKEN=your_github_personal_access_token
 GITHUB_USERNAME=your_github_username
 
-# Alternative destination provider (GitLab)
-# DESTINATION_PROVIDER=gitlab
-# GITLAB_DEST_URL=https://gitlab.com
-# GITLAB_DEST_TOKEN=your_gitlab_dest_token
-# GITLAB_DEST_USERNAME=your_gitlab_dest_username
+# Instructions:
+# 1. Fill in the credentials for the providers you want to use as source or destination
+# 2. You can use the same credentials for source and dest if it's the same instance
+# 3. For migrations between different instances of the same provider, use different credentials
+# 4. GitHub only has one instance (github.com), so GitHub→GitHub migrations are not supported
+# 5. The tool will ask you which provider to use as source and destination
 """
         env_file.write_text(template)
         print(f"{Fore.YELLOW}📝 Created .env template file. Please fill it with your credentials.{Style.RESET_ALL}")
@@ -172,14 +175,17 @@ Supported providers:
         # Initialize configuration
         config = MigrationConfig()
         
+        # Select providers interactively
+        source_provider_type, destination_provider_type = select_providers()
+        
         # Create providers
         source_provider = ProviderFactory.create_source_provider(
-            config.source_provider, 
-            config.source_config
+            source_provider_type, 
+            config.get_source_provider_config(source_provider_type)
         )
         destination_provider = ProviderFactory.create_destination_provider(
-            config.destination_provider, 
-            config.destination_config
+            destination_provider_type, 
+            config.get_destination_provider_config(destination_provider_type)
         )
         
         # Initialize migration engine
@@ -187,7 +193,7 @@ Supported providers:
         
         # Handle list command
         if args.list:
-            print(f"{Fore.CYAN}📋 Available repositories from {config.source_provider}:{Style.RESET_ALL}")
+            print(f"{Fore.CYAN}📋 Available repositories from {source_provider_type}:{Style.RESET_ALL}")
             repos = source_provider.get_accessible_repositories()
             
             for repo in repos:
@@ -209,7 +215,7 @@ Supported providers:
                 if '/' in repo_spec:
                     owner, repo_name = repo_spec.split('/', 1)
                 else:
-                    owner = config.source_config['username']
+                    owner = config.get_source_provider_config(source_provider_type)['username']
                     repo_name = repo_spec
                 
                 repo = source_provider.get_repository_info(owner, repo_name)
@@ -230,7 +236,7 @@ Supported providers:
                 results = migration_engine.migrate_repositories(user_repos)
             else:
                 print(f"{Fore.CYAN}🎯 Interactive mode - select repositories to migrate{Style.RESET_ALL}")
-                username = config.source_config['username']
+                username = config.get_source_provider_config(source_provider_type)['username']
                 selected_repos = select_repositories_interactive(all_repos, username)
                 results = migration_engine.migrate_repositories(selected_repos)
         

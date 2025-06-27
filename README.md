@@ -40,48 +40,39 @@ Cela créera un fichier `.env` que vous devrez remplir avec vos informations sel
 
 ## 🔧 Configuration
 
-### Configuration basique (Gitea → GitHub)
+### Configuration avec support multi-instances
 ```env
-# Source Provider
-SOURCE_PROVIDER=gitea
-GITEA_URL=https://votre-instance-gitea.com
-GITEA_TOKEN=votre_token_gitea
-GITEA_USERNAME=votre_nom_utilisateur_gitea
+# Gitea Source Configuration
+GITEA_SOURCE_URL=https://votre-instance-gitea-source.com
+GITEA_SOURCE_TOKEN=votre_token_gitea_source
+GITEA_SOURCE_USERNAME=votre_nom_utilisateur_gitea_source
 
-# Destination Provider
-DESTINATION_PROVIDER=github
-GITHUB_TOKEN=votre_token_github
-GITHUB_USERNAME=votre_nom_utilisateur_github
-```
+# Gitea Destination Configuration  
+GITEA_DEST_URL=https://votre-instance-gitea-dest.com
+GITEA_DEST_TOKEN=votre_token_gitea_dest
+GITEA_DEST_USERNAME=votre_nom_utilisateur_gitea_dest
 
-### Configuration GitLab → GitHub
-```env
-# Source Provider
-SOURCE_PROVIDER=gitlab
-GITLAB_URL=https://gitlab.com
-GITLAB_TOKEN=votre_token_gitlab
-GITLAB_USERNAME=votre_nom_utilisateur_gitlab
+# GitLab Source Configuration
+GITLAB_SOURCE_URL=https://gitlab-source.com
+GITLAB_SOURCE_TOKEN=votre_token_gitlab_source
+GITLAB_SOURCE_USERNAME=votre_nom_utilisateur_gitlab_source
 
-# Destination Provider
-DESTINATION_PROVIDER=github
-GITHUB_TOKEN=votre_token_github
-GITHUB_USERNAME=votre_nom_utilisateur_github
-```
-
-### Configuration GitLab → GitLab (migration entre instances)
-```env
-# Source Provider
-SOURCE_PROVIDER=gitlab
-GITLAB_URL=https://gitlab-source.com
-GITLAB_TOKEN=votre_token_gitlab_source
-GITLAB_USERNAME=votre_nom_utilisateur_source
-
-# Destination Provider
-DESTINATION_PROVIDER=gitlab
-GITLAB_DEST_URL=https://gitlab-destination.com
+# GitLab Destination Configuration
+GITLAB_DEST_URL=https://gitlab-dest.com
 GITLAB_DEST_TOKEN=votre_token_gitlab_dest
-GITLAB_DEST_USERNAME=votre_nom_utilisateur_dest
+GITLAB_DEST_USERNAME=votre_nom_utilisateur_gitlab_dest
+
+# GitHub Configuration (same for source and destination - only one instance)
+GITHUB_TOKEN=votre_token_github
+GITHUB_USERNAME=votre_nom_utilisateur_github
 ```
+
+**📝 Instructions :**
+1. **Multi-instances** : Vous pouvez configurer différentes instances du même provider
+2. **Même instance** : Utilisez les mêmes credentials pour source et destination si c'est la même instance
+3. **Migration flexible** : Supports GitLab → GitLab, Gitea → Gitea, etc. entre différentes instances
+4. **Configuration minimale** : Configurez seulement les providers source/destination que vous utilisez
+5. L'outil vous demandera interactivement quel provider utiliser comme source et destination
 
 ## 🔑 Configuration des tokens
 
@@ -173,33 +164,29 @@ Après la sélection, l'outil propose de renommer les repositories :
 
 ## 📋 Exemples d'utilisation
 
-### Exemple 1 : Migration Gitea → GitHub (défaut)
+### Exemple 1 : Migration interactive (défaut)
 ```bash
-# Configuration dans .env
-SOURCE_PROVIDER=gitea
-DESTINATION_PROVIDER=github
-
-# Interface interactive pour sélectionner les repos
+# 1. Configurez vos providers dans .env
+# 2. Lancez l'outil
 ./run.sh
+
+# L'outil vous demandera :
+# - Quel provider utiliser comme source
+# - Quel provider utiliser comme destination
+# - Puis vous pourrez sélectionner les repos à migrer
 ```
 
-### Exemple 2 : Migration GitLab → GitHub
+### Exemple 2 : Migration automatique
 ```bash
-# Configuration dans .env
-SOURCE_PROVIDER=gitlab
-DESTINATION_PROVIDER=github
-
-# Migration automatique
+# Migre tous vos repositories automatiquement
+# (après sélection interactive des providers)
 ./run.sh --no-interactive
 ```
 
-### Exemple 3 : Migration GitLab → GitLab (entre instances)
+### Exemple 3 : Migration sélective
 ```bash
-# Configuration dans .env
-SOURCE_PROVIDER=gitlab
-DESTINATION_PROVIDER=gitlab
-
-# Migration sélective
+# Migre seulement les repositories spécifiés
+# (après sélection interactive des providers)
 ./run.sh --repos projet-web api-backend
 ```
 
@@ -211,17 +198,17 @@ DESTINATION_PROVIDER=gitlab
 
 ### Exemple 5 : Premier lancement (configuration)
 ```bash
-# 1. Setup initial
+# 1. Setup initial - crée le fichier .env template
 ./run.sh --setup
 
-# 2. Éditez le fichier .env avec vos credentials et providers
+# 2. Éditez le fichier .env avec vos credentials (au moins 2 providers)
 nano .env
 
-# 3. Listez vos repositories disponibles
-./run.sh --list
-
-# 4. Lancez la migration interactive
+# 3. Lancez l'outil - il vous demandera quels providers utiliser
 ./run.sh
+
+# 4. Pour lister les repos disponibles (après sélection du provider source)
+./run.sh --list
 ```
 
 ### Exemple 6 : Migration avec renommage
@@ -229,12 +216,13 @@ nano .env
 # 1. Lancer le mode interactif
 ./run.sh
 
-# 2. Sélectionner les repos à migrer
-# 3. Choisir "Y" pour le renommage
-# 4. Renommer les repos un par un
+# 2. Sélectionner les providers source et destination
+# 3. Sélectionner les repos à migrer
+# 4. Choisir "Y" pour le renommage
+# 5. Renommer les repos un par un
 #    - Appuyer sur ENTRÉE pour garder le nom original
 #    - Taper un nouveau nom pour renommer
-# 5. Confirmer et lancer la migration
+# 6. Confirmer et lancer la migration
 ```
 
 ## 📊 Résultats
@@ -314,17 +302,20 @@ GitMigrator/
 - L'outil vérifie automatiquement l'existence sur le provider de destination
 - Les repositories existants sont ignorés avec un avertissement
 
-### Provider non supporté
-- Vérifiez que le provider est bien configuré dans SOURCE_PROVIDER ou DESTINATION_PROVIDER
-- Providers disponibles : gitea, gitlab (source) | github, gitlab (destination)
+### Provider non supporté ou non configuré
+- Vérifiez que vos providers sont bien configurés dans le fichier .env
+- Assurez-vous d'avoir au moins 2 providers configurés
+- Providers disponibles : gitea, gitlab, github
+- L'outil vous indiquera quels providers sont configurés au démarrage
 
 ## 📝 Logs
 
 Tous les détails d'exécution sont sauvegardés dans `migration.log` :
 - Timestamps des opérations
+- Sélection des providers source et destination
 - Détails des erreurs
 - Statistiques de migration
-- Informations sur les providers utilisés
+- Informations complètes sur le processus de migration
 
 ## 🚀 Extensibilité
 

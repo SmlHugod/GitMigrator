@@ -5,6 +5,8 @@ from typing import Dict, Type
 from .base import SourceProvider, DestinationProvider, ConfigurationError
 from .source.gitea import GiteaSourceProvider
 from .source.gitlab import GitLabSourceProvider
+from .source.github import GitHubSourceProvider
+from .destination.gitea import GiteaDestinationProvider
 from .destination.github import GitHubDestinationProvider
 from .destination.gitlab import GitLabDestinationProvider
 
@@ -15,9 +17,11 @@ class ProviderFactory:
     _source_providers: Dict[str, Type[SourceProvider]] = {
         'gitea': GiteaSourceProvider,
         'gitlab': GitLabSourceProvider,
+        'github': GitHubSourceProvider,
     }
     
     _destination_providers: Dict[str, Type[DestinationProvider]] = {
+        'gitea': GiteaDestinationProvider,
         'github': GitHubDestinationProvider,
         'gitlab': GitLabDestinationProvider,
     }
