@@ -136,7 +136,7 @@ class MigrationConfig:
         dest_configured = any(self.get_available_destination_providers().values())
         return source_configured and dest_configured
 
-    # Méthodes dépréciées pour compatibilité (si jamais utilisées ailleurs)
+    # Deprecated methods for compatibility (if ever used elsewhere)
     def get_provider_config(self, provider_type: str) -> Dict[str, Any]:
         """DEPRECATED: Use get_source_provider_config or get_destination_provider_config"""
         return self.get_source_provider_config(provider_type)

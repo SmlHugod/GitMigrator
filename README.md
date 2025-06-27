@@ -1,341 +1,341 @@
-# 🚀 Outil de Migration Git Multi-Providers
+# 🚀 Multi-Provider Git Migration Tool
 
-Cet projet fournit un outil pratique et modulable pour migrer automatiquement vos repositories entre différents providers Git.
+This project provides a practical and modular tool to automatically migrate your repositories between different Git providers.
 
-## ✨ Fonctionnalités
+## ✨ Features
 
-- **Migration multi-providers** : Supporte plusieurs providers source et destination
-- **Providers supportés** :
-  - **Sources** : Gitea, GitLab
-  - **Destinations** : GitHub, GitLab
-- **Mode interactif par défaut** : Interface élégante pour sélectionner/déselectionner les repos à migrer
-- **Vision complète** : Voit tous les repositories accessibles (vos repos + ceux d'organisations)
-- **Sélection intelligente** : Vos repositories sont pré-sélectionnés, les autres sont désélectionnés par défaut
-- **Renommage intelligent** : Possibilité de renommer les repositories lors de la migration
-- **Migration sélective** : Choisissez spécifiquement quels repositories migrer en ligne de commande
-- **Interface en ligne de commande** : Interface colorée et intuitive avec navigation au clavier
-- **Logging complet** : Suivi détaillé des opérations avec fichier de log
-- **Gestion des erreurs** : Robuste avec gestion gracieuse des erreurs
-- **Architecture extensible** : Facilement extensible pour ajouter de nouveaux providers
+- **Multi-provider migration**: Supports multiple source and destination providers
+- **Supported providers**:
+  - **Sources**: Gitea, GitLab
+  - **Destinations**: GitHub, GitLab
+- **Interactive mode by default**: Elegant interface to select/deselect repositories to migrate
+- **Complete vision**: See all accessible repositories (your repos + those from organizations)
+- **Smart selection**: Your repositories are pre-selected, others are deselected by default
+- **Smart renaming**: Ability to rename repositories during migration
+- **Selective migration**: Choose specifically which repositories to migrate via command line
+- **Command line interface**: Colorful and intuitive interface with keyboard navigation
+- **Complete logging**: Detailed operation tracking with log file
+- **Error handling**: Robust with graceful error management
+- **Extensible architecture**: Easily extensible to add new providers
 
 ## 🛠 Installation
 
-1. **Clonez le repository** :
+1. **Clone the repository**:
 ```bash
-git clone https://github.com/votre-username/GitMigrator.git
+git clone https://github.com/your-username/GitMigrator.git
 cd GitMigrator
 ```
 
-2. **Configuration automatique** :
+2. **Automatic configuration**:
 ```bash
 ./run.sh --setup
 ```
 
-Le script va automatiquement :
-- Créer un environnement virtuel Python
-- Installer toutes les dépendances
-- Créer le fichier de configuration `.env`
+The script will automatically:
+- Create a Python virtual environment
+- Install all dependencies
+- Create the `.env` configuration file
 
-Cela créera un fichier `.env` que vous devrez remplir avec vos informations selon les providers choisis.
+This will create a `.env` file that you will need to fill with your information according to the chosen providers.
 
 ## 🔧 Configuration
 
-### Configuration avec support multi-instances
+### Configuration with multi-instance support
 ```env
 # Gitea Source Configuration
-GITEA_SOURCE_URL=https://votre-instance-gitea-source.com
-GITEA_SOURCE_TOKEN=votre_token_gitea_source
-GITEA_SOURCE_USERNAME=votre_nom_utilisateur_gitea_source
+GITEA_SOURCE_URL=https://your-gitea-source-instance.com
+GITEA_SOURCE_TOKEN=your_gitea_source_token
+GITEA_SOURCE_USERNAME=your_gitea_source_username
 
 # Gitea Destination Configuration  
-GITEA_DEST_URL=https://votre-instance-gitea-dest.com
-GITEA_DEST_TOKEN=votre_token_gitea_dest
-GITEA_DEST_USERNAME=votre_nom_utilisateur_gitea_dest
+GITEA_DEST_URL=https://your-gitea-dest-instance.com
+GITEA_DEST_TOKEN=your_gitea_dest_token
+GITEA_DEST_USERNAME=your_gitea_dest_username
 
 # GitLab Source Configuration
 GITLAB_SOURCE_URL=https://gitlab-source.com
-GITLAB_SOURCE_TOKEN=votre_token_gitlab_source
-GITLAB_SOURCE_USERNAME=votre_nom_utilisateur_gitlab_source
+GITLAB_SOURCE_TOKEN=your_gitlab_source_token
+GITLAB_SOURCE_USERNAME=your_gitlab_source_username
 
 # GitLab Destination Configuration
 GITLAB_DEST_URL=https://gitlab-dest.com
-GITLAB_DEST_TOKEN=votre_token_gitlab_dest
-GITLAB_DEST_USERNAME=votre_nom_utilisateur_gitlab_dest
+GITLAB_DEST_TOKEN=your_gitlab_dest_token
+GITLAB_DEST_USERNAME=your_gitlab_dest_username
 
 # GitHub Configuration (same for source and destination - only one instance)
-GITHUB_TOKEN=votre_token_github
-GITHUB_USERNAME=votre_nom_utilisateur_github
+GITHUB_TOKEN=your_github_token
+GITHUB_USERNAME=your_github_username
 ```
 
-**📝 Instructions :**
-1. **Multi-instances** : Vous pouvez configurer différentes instances du même provider
-2. **Même instance** : Utilisez les mêmes credentials pour source et destination si c'est la même instance
-3. **Migration flexible** : Supports GitLab → GitLab, Gitea → Gitea, etc. entre différentes instances
-4. **Configuration minimale** : Configurez seulement les providers source/destination que vous utilisez
-5. L'outil vous demandera interactivement quel provider utiliser comme source et destination
+**📝 Instructions:**
+1. **Multi-instances**: You can configure different instances of the same provider
+2. **Same instance**: Use the same credentials for source and destination if it's the same instance
+3. **Flexible migration**: Supports GitLab → GitLab, Gitea → Gitea, etc. between different instances
+4. **Minimal configuration**: Configure only the source/destination providers that you use
+5. The tool will interactively ask which provider to use as source and destination
 
-## 🔑 Configuration des tokens
+## 🔑 Token Configuration
 
-### Token Gitea
-1. Allez dans **Settings** → **Applications** → **Generate New Token**
-2. Donnez un nom au token et sélectionnez les permissions :
-   - `repo` (accès complet aux repositories)
-   - `user` (accès aux informations utilisateur)
+### Gitea Token
+1. Go to **Settings** → **Applications** → **Generate New Token**
+2. Give the token a name and select permissions:
+   - `repo` (full access to repositories)
+   - `user` (access to user information)
 
-### Token GitLab
-1. Allez dans **Settings** → **Access Tokens** ou **User Settings** → **Access Tokens**
-2. Créez un **Personal Access Token** avec les permissions :
-   - `read_api` (lecture des informations API)
-   - `read_repository` (lecture des repositories)
-   - `write_repository` (écriture des repositories - pour destination)
+### GitLab Token
+1. Go to **Settings** → **Access Tokens** or **User Settings** → **Access Tokens**
+2. Create a **Personal Access Token** with permissions:
+   - `read_api` (read API information)
+   - `read_repository` (read repositories)
+   - `write_repository` (write repositories - for destination)
 
-### Token GitHub
-1. Allez dans **Settings** → **Developer settings** → **Personal access tokens** → **Tokens (classic)**
-2. Cliquez sur **Generate new token (classic)**
-3. Sélectionnez les permissions :
-   - `repo` (accès complet aux repositories privés)
-   - `public_repo` (accès aux repositories publics)
+### GitHub Token
+1. Go to **Settings** → **Developer settings** → **Personal access tokens** → **Tokens (classic)**
+2. Click on **Generate new token (classic)**
+3. Select permissions:
+   - `repo` (full access to private repositories)
+   - `public_repo` (access to public repositories)
 
-## 🚀 Utilisation
+## 🚀 Usage
 
-Après avoir configuré vos tokens dans le fichier `.env`, utilisez le script de lancement :
+After configuring your tokens in the `.env` file, use the launch script:
 
-### Migration interactive (par défaut)
+### Interactive migration (default)
 ```bash
 ./run.sh
 ```
 
-### Migration automatique de tous vos repos
+### Automatic migration of all your repos
 ```bash
 ./run.sh --no-interactive
 ```
 
-### Migration de repositories spécifiques
+### Migration of specific repositories
 ```bash
-./run.sh --repos mon-repo autre-repo
+./run.sh --repos my-repo another-repo
 ```
 
-### Lister les repositories disponibles
+### List available repositories
 ```bash
 ./run.sh --list
 ```
 
-### Mode verbose (plus de détails)
+### Verbose mode (more details)
 ```bash
 ./run.sh --verbose
 ```
 
-> **💡 Alternative** : Vous pouvez aussi utiliser directement `python main.py` si vous avez activé l'environnement virtuel (`source venv/bin/activate`)
+> **💡 Alternative**: You can also use `python main.py` directly if you have activated the virtual environment (`source venv/bin/activate`)
 
-## 🎯 Mode Interactif
+## 🎯 Interactive Mode
 
-Le mode interactif (activé par défaut) offre une **interface utilisateur élégante** pour sélectionner précisément quels repositories migrer :
+Interactive mode (enabled by default) offers an **elegant user interface** to precisely select which repositories to migrate:
 
 ```bash
-./run.sh  # Mode interactif par défaut
+./run.sh  # Interactive mode by default
 ```
 
-### Contrôles dans l'interface interactive :
-- **↑↓** : Naviguer entre les repositories
-- **←→** : Changer de page (si beaucoup de repos)
-- **ESPACE** : Cocher/décocher un repository
-- **A** : Sélectionner tous les repositories
-- **N** : Désélectionner tous les repositories
-- **ENTRÉE** : Confirmer la sélection et passer au renommage (optionnel)
-- **Q** : Quitter sans migrer
+### Controls in the interactive interface:
+- **↑↓**: Navigate between repositories
+- **←→**: Change page (if many repos)
+- **SPACE**: Check/uncheck a repository
+- **A**: Select all repositories
+- **N**: Deselect all repositories
+- **ENTER**: Confirm selection and proceed to renaming (optional)
+- **Q**: Quit without migrating
 
-### Interface de renommage :
-Après la sélection, l'outil propose de renommer les repositories :
-- **Y** : Ouvrir l'interface de renommage
-- **N/ENTRÉE** : Conserver les noms actuels
-- **Validation automatique** des noms de repositories pour le provider de destination
+### Renaming interface:
+After selection, the tool offers to rename repositories:
+- **Y**: Open renaming interface
+- **N/ENTER**: Keep current names
+- **Automatic validation** of repository names for the destination provider
 
-### Fonctionnalités :
-- ✅ **Checkboxes visuelles** avec émojis
-- 👤 **Distinction propriétaire** : Vos repos vs repos d'autres utilisateurs
-- 🎯 **Sélection intelligente** : Vos repos pré-sélectionnés par défaut
-- 📋 **Tri intelligent** : Vos repos en premier, puis les autres, tous par ordre alphabétique
-- ✏️ **Renommage optionnel** : Possibilité de renommer les repos sur le provider de destination
-- 📄 **Pagination automatique** (15 repos par page)
-- 🎨 **Interface colorée** avec mise en surbrillance et séparateurs visuels
-- 📊 **Compteur en temps réel** des repos sélectionnés
-- 🔒 **Indicateurs visuels** (privé/public)
-- 📝 **Descriptions tronquées** pour un affichage propre
+### Features:
+- ✅ **Visual checkboxes** with emojis
+- 👤 **Owner distinction**: Your repos vs other users' repos
+- 🎯 **Smart selection**: Your repos pre-selected by default
+- 📋 **Smart sorting**: Your repos first, then others, all alphabetically ordered
+- ✏️ **Optional renaming**: Ability to rename repos on the destination provider
+- 📄 **Automatic pagination** (15 repos per page)
+- 🎨 **Colorful interface** with highlighting and visual separators
+- 📊 **Real-time counter** of selected repos
+- 🔒 **Visual indicators** (private/public)
+- 📝 **Truncated descriptions** for clean display
 
-## 📋 Exemples d'utilisation
+## 📋 Usage Examples
 
-### Exemple 1 : Migration interactive (défaut)
+### Example 1: Interactive migration (default)
 ```bash
-# 1. Configurez vos providers dans .env
-# 2. Lancez l'outil
+# 1. Configure your providers in .env
+# 2. Launch the tool
 ./run.sh
 
-# L'outil vous demandera :
-# - Quel provider utiliser comme source
-# - Quel provider utiliser comme destination
-# - Puis vous pourrez sélectionner les repos à migrer
+# The tool will ask you:
+# - Which provider to use as source
+# - Which provider to use as destination
+# - Then you can select repos to migrate
 ```
 
-### Exemple 2 : Migration automatique
+### Example 2: Automatic migration
 ```bash
-# Migre tous vos repositories automatiquement
-# (après sélection interactive des providers)
+# Migrate all your repositories automatically
+# (after interactive provider selection)
 ./run.sh --no-interactive
 ```
 
-### Exemple 3 : Migration sélective
+### Example 3: Selective migration
 ```bash
-# Migre seulement les repositories spécifiés
-# (après sélection interactive des providers)
-./run.sh --repos projet-web api-backend
+# Migrate only specified repositories
+# (after interactive provider selection)
+./run.sh --repos web-project api-backend
 ```
 
-### Exemple 4 : Migration depuis une organisation
+### Example 4: Migration from an organization
 ```bash
-# Migre un repository d'une organisation (fonctionne avec tous les providers)
-./run.sh --repos mon-org/projet-important
+# Migrate a repository from an organization (works with all providers)
+./run.sh --repos my-org/important-project
 ```
 
-### Exemple 5 : Premier lancement (configuration)
+### Example 5: First launch (configuration)
 ```bash
-# 1. Setup initial - crée le fichier .env template
+# 1. Initial setup - creates .env template file
 ./run.sh --setup
 
-# 2. Éditez le fichier .env avec vos credentials (au moins 2 providers)
+# 2. Edit the .env file with your credentials (at least 2 providers)
 nano .env
 
-# 3. Lancez l'outil - il vous demandera quels providers utiliser
+# 3. Launch the tool - it will ask which providers to use
 ./run.sh
 
-# 4. Pour lister les repos disponibles (après sélection du provider source)
+# 4. To list available repos (after source provider selection)
 ./run.sh --list
 ```
 
-### Exemple 6 : Migration avec renommage
+### Example 6: Migration with renaming
 ```bash
-# 1. Lancer le mode interactif
+# 1. Launch interactive mode
 ./run.sh
 
-# 2. Sélectionner les providers source et destination
-# 3. Sélectionner les repos à migrer
-# 4. Choisir "Y" pour le renommage
-# 5. Renommer les repos un par un
-#    - Appuyer sur ENTRÉE pour garder le nom original
-#    - Taper un nouveau nom pour renommer
-# 6. Confirmer et lancer la migration
+# 2. Select source and destination providers
+# 3. Select repos to migrate
+# 4. Choose "Y" for renaming
+# 5. Rename repos one by one
+#    - Press ENTER to keep original name
+#    - Type new name to rename
+# 6. Confirm and start migration
 ```
 
-## 📊 Résultats
+## 📊 Results
 
-L'outil affiche un résumé détaillé à la fin :
-- ✅ Nombre de migrations réussies
-- ❌ Nombre de migrations échouées
-- 📝 Détail par repository
+The tool displays a detailed summary at the end:
+- ✅ Number of successful migrations
+- ❌ Number of failed migrations
+- 📝 Detail per repository
 
-Tous les logs sont également sauvegardés dans `migration.log`.
+All logs are also saved in `migration.log`.
 
-## 🔧 Structure du projet
+## 🔧 Project Structure
 
 ```
 GitMigrator/
-├── main.py                     # Script principal
-├── core/                       # Logique métier centrale
-│   ├── config.py              # Gestion de la configuration multi-providers
-│   └── migration_engine.py    # Moteur de migration
-├── providers/                  # Providers pour différents services Git
-│   ├── base.py                # Classes abstraites et modèles
-│   ├── factory.py             # Factory pour créer les providers
-│   ├── source/                # Providers source
-│   │   ├── gitea.py          # Support Gitea
-│   │   └── gitlab.py         # Support GitLab
-│   └── destination/           # Providers destination
-│       ├── github.py         # Support GitHub
-│       └── gitlab.py         # Support GitLab
-├── ui/                        # Interface utilisateur
+├── main.py                     # Main script
+├── core/                       # Core business logic
+│   ├── config.py              # Multi-provider configuration management
+│   └── migration_engine.py    # Migration engine
+├── providers/                  # Providers for different Git services
+│   ├── base.py                # Abstract classes and models
+│   ├── factory.py             # Factory to create providers
+│   ├── source/                # Source providers
+│   │   ├── gitea.py          # Gitea support
+│   │   └── gitlab.py         # GitLab support
+│   └── destination/           # Destination providers
+│       ├── github.py         # GitHub support
+│       └── gitlab.py         # GitLab support
+├── ui/                        # User interface
 │   └── interactive_selector.py
-├── requirements.txt           # Dépendances Python
-├── .env                      # Configuration (à créer)
+├── requirements.txt           # Python dependencies
+├── .env                      # Configuration (to create)
 └── README.md                 # Documentation
 ```
 
-## 🌟 Providers supportés
+## 🌟 Supported Providers
 
-### Providers Source
-- **Gitea** : Instances Gitea (self-hosted ou cloud)
-- **GitLab** : GitLab.com ou instances GitLab self-hosted
+### Source Providers
+- **Gitea**: Gitea instances (self-hosted or cloud)
+- **GitLab**: GitLab.com or self-hosted GitLab instances
 
-### Providers Destination
-- **GitHub** : GitHub.com
-- **GitLab** : GitLab.com ou instances GitLab self-hosted
+### Destination Providers
+- **GitHub**: GitHub.com
+- **GitLab**: GitLab.com or self-hosted GitLab instances
 
-### Combinaisons possibles
+### Possible Combinations
 - Gitea → GitHub
 - Gitea → GitLab
 - GitLab → GitHub
-- GitLab → GitLab (migration entre instances)
+- GitLab → GitLab (migration between instances)
 
-## ⚠️ Prérequis
+## ⚠️ Prerequisites
 
 - Python 3.7+
-- Git installé sur votre système
-- Accès aux APIs des providers source et destination
-- Tokens d'authentification valides pour les providers
+- Git installed on your system
+- Access to source and destination provider APIs
+- Valid authentication tokens for providers
 
-## 🛡 Sécurité
+## 🛡 Security
 
-- Les tokens sont stockés dans un fichier `.env` (ajoutez-le à `.gitignore`)
-- Les URLs d'authentification ne sont jamais loggées
-- Nettoyage automatique des repositories temporaires
+- Tokens are stored in a `.env` file (add it to `.gitignore`)
+- Authentication URLs are never logged
+- Automatic cleanup of temporary repositories
 
-## 🐛 Résolution de problèmes
+## 🐛 Troubleshooting
 
-### Erreur d'authentification
-- Vérifiez que vos tokens sont valides et ont les bonnes permissions
-- Assurez-vous que les noms d'utilisateur correspondent
-- Vérifiez que les URLs des providers sont correctes
+### Authentication error
+- Check that your tokens are valid and have the right permissions
+- Make sure usernames match
+- Verify that provider URLs are correct
 
-### Erreur de clonage
-- Vérifiez votre connexion internet
-- Assurez-vous que Git est installé et accessible
+### Clone error
+- Check your internet connection
+- Make sure Git is installed and accessible
 
-### Repository déjà existant
-- L'outil vérifie automatiquement l'existence sur le provider de destination
-- Les repositories existants sont ignorés avec un avertissement
+### Repository already exists
+- The tool automatically checks existence on the destination provider
+- Existing repositories are ignored with a warning
 
-### Provider non supporté ou non configuré
-- Vérifiez que vos providers sont bien configurés dans le fichier .env
-- Assurez-vous d'avoir au moins 2 providers configurés
-- Providers disponibles : gitea, gitlab, github
-- L'outil vous indiquera quels providers sont configurés au démarrage
+### Unsupported or unconfigured provider
+- Check that your providers are properly configured in the .env file
+- Make sure you have at least 2 providers configured
+- Available providers: gitea, gitlab, github
+- The tool will indicate which providers are configured at startup
 
 ## 📝 Logs
 
-Tous les détails d'exécution sont sauvegardés dans `migration.log` :
-- Timestamps des opérations
-- Sélection des providers source et destination
-- Détails des erreurs
-- Statistiques de migration
-- Informations complètes sur le processus de migration
+All execution details are saved in `migration.log`:
+- Operation timestamps
+- Source and destination provider selection
+- Error details
+- Migration statistics
+- Complete information about the migration process
 
-## 🚀 Extensibilité
+## 🚀 Extensibility
 
-L'architecture modulaire permet d'ajouter facilement de nouveaux providers :
+The modular architecture allows easy addition of new providers:
 
-1. **Créer un nouveau provider source** dans `providers/source/`
-2. **Créer un nouveau provider destination** dans `providers/destination/`
-3. **Enregistrer le provider** dans `providers/factory.py`
-4. **Ajouter la configuration** dans `core/config.py`
+1. **Create a new source provider** in `providers/source/`
+2. **Create a new destination provider** in `providers/destination/`
+3. **Register the provider** in `providers/factory.py`
+4. **Add configuration** in `core/config.py`
 
-Voir `ARCHITECTURE.md` pour plus de détails sur l'ajout de nouveaux providers.
+See `ARCHITECTURE.md` for more details on adding new providers.
 
 ## 🤝 Contribution
 
-Les contributions sont les bienvenues ! N'hésitez pas à :
-- Signaler des bugs
-- Proposer des améliorations
-- Soumettre des pull requests
-- Ajouter de nouveaux providers
+Contributions are welcome! Feel free to:
+- Report bugs
+- Suggest improvements
+- Submit pull requests
+- Add new providers
 
-## 📄 Licence
+## 📄 License
 
-Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails.
+This project is under MIT license. See the LICENSE file for more details.

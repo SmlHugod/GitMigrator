@@ -80,7 +80,7 @@ class InteractiveSelector:
             
             # Add separator when transitioning from own repos to others
             if last_owner_type == "own" and current_owner_type == "others":
-                print(f"  {Fore.LIGHTBLACK_EX}{'─' * 50} Autres repositories {'─' * 10}{Style.RESET_ALL}")
+                print(f"  {Fore.LIGHTBLACK_EX}{'─' * 50} Other repositories {'─' * 10}{Style.RESET_ALL}")
             
             last_owner_type = current_owner_type
             
@@ -189,7 +189,7 @@ class InteractiveSelector:
         print(f"║                  ✏️  RENAME REPOSITORIES                     ║")
         print(f"║                                                               ║")
         print(f"║  Press ENTER to keep current name, or type new name          ║")
-        print(f"║  Repository names should be valid GitHub repo names          ║")
+        print(f"║  Repository names should be valid for destination provider   ║")
         print(f"╚═══════════════════════════════════════════════════════════════╝{Style.RESET_ALL}")
         print()
         
@@ -204,7 +204,7 @@ class InteractiveSelector:
             print(f"   Source: {Fore.BLUE}{owner}/{original_name}{Style.RESET_ALL} {private}")
             
             # Get new name from user
-            new_name = input(f"   GitHub name [{Fore.GREEN}{original_name}{Style.RESET_ALL}]: ").strip()
+            new_name = input(f"   Destination name [{Fore.GREEN}{original_name}{Style.RESET_ALL}]: ").strip()
             
             # Validate and use new name
             if new_name:
@@ -218,7 +218,7 @@ class InteractiveSelector:
                 new_name = original_name
                 print(f"   {Fore.CYAN}ℹ️  Keeping original name: {original_name}{Style.RESET_ALL}")
             
-            # Update repository with new GitHub name
+            # Update repository with new destination name
             repo.github_name = new_name
             renamed_repos.append(repo)
             print()
@@ -242,11 +242,11 @@ class InteractiveSelector:
         return renamed_repos
     
     def _is_valid_repo_name(self, name: str) -> bool:
-        """Validate GitHub repository name"""
+        """Validate repository name for destination provider"""
         if not name:
             return False
         
-        # GitHub repo name rules (simplified)
+        # Common repository name rules (simplified)
         if len(name) > 100:
             return False
         
@@ -307,13 +307,13 @@ class InteractiveSelector:
             print(f"  • {Fore.BLUE}{owner}/{name}{Style.RESET_ALL} {private}")
         
         # Ask if user wants to rename repositories
-        print(f"\n{Fore.YELLOW}📝 Voulez-vous changer le nom de certains repos sur GitHub ?{Style.RESET_ALL}")
-        print(f"{Fore.CYAN}[Y/y] Oui - Interface de renommage{Style.RESET_ALL}")
-        print(f"{Fore.CYAN}[N/n ou ENTER] Non - Conserver les noms actuels{Style.RESET_ALL}")
+        print(f"\n{Fore.YELLOW}📝 Do you want to change the name of some repos on the destination?{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}[Y/y] Yes - Renaming interface{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}[N/n or ENTER] No - Keep current names{Style.RESET_ALL}")
         
-        choice = input(f"\n{Fore.YELLOW}Votre choix: {Style.RESET_ALL}").strip().lower()
+        choice = input(f"\n{Fore.YELLOW}Your choice: {Style.RESET_ALL}").strip().lower()
         
-        if choice == 'y' or choice == 'yes' or choice == 'oui':
+        if choice == 'y' or choice == 'yes':
             selected_repos = self._rename_repositories_interface(selected_repos)
         
         print(f"\n{Fore.CYAN}🚀 Starting migration...{Style.RESET_ALL}\n")
