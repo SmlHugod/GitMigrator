@@ -22,7 +22,7 @@ This project provides a practical and modular tool to automatically migrate your
 
 1. **Clone the repository**:
 ```bash
-git clone https://github.com/your-username/GitMigrator.git
+git clone https://github.com/SmlHugod/GitMigrator.git
 cd GitMigrator
 ```
 
