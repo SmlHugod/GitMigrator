@@ -12,4 +12,4 @@ else
 fi
 
 # Run the migration tool with all passed arguments
-python migrate.py "$@" 
+python main.py "$@" 

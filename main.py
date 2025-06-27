@@ -1,19 +1,26 @@
 #!/usr/bin/env python3
 """
-Gitea to GitHub Migration Tool
+Repository Migration Tool
 
-This script migrates repositories from Gitea to GitHub.
-It can migrate all user repositories or specific ones.
+A flexible tool for migrating repositories between different Git hosting providers.
+Currently supports:
+- Source providers: Gitea
+- Destination providers: GitHub
+
+Future providers can be easily added through the extensible provider system.
 """
 
 import argparse
 import logging
 import sys
-from colorama import init, Fore, Style
 from pathlib import Path
+from colorama import init, Fore, Style
 
-from config import Config
-from migration_tool import MigrationTool
+from core.config import MigrationConfig
+from core.migration_engine import MigrationEngine
+from providers.factory import ProviderFactory
+from providers.base import ConfigurationError, ProviderError, MigrationError
+from ui.interactive_selector import select_repositories_interactive
 
 # Initialize colorama for cross-platform colored output
 init()
@@ -37,9 +44,9 @@ def print_banner():
     banner = f"""
 {Fore.CYAN}╔═══════════════════════════════════════════════════════════════╗
 ║                                                               ║
-║            🚀 Gitea to GitHub Migration Tool 🚀              ║
+║         🚀 Repository Migration Tool 🚀                      ║
 ║                                                               ║
-║  Migrates your repositories from Gitea to GitHub seamlessly  ║
+║  Migrate repositories between Git hosting providers          ║
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝{Style.RESET_ALL}
 """
@@ -68,14 +75,28 @@ def create_env_template():
     env_file = Path('.env')
     
     if not env_file.exists():
-        template = """# Gitea Configuration
-GITEA_URL=https://your-gitea-instance.com
+        template = """# Source Provider Configuration
+SOURCE_PROVIDER=gitea
+GITEA_URL=https://codefirst.iut.uca.fr/git
 GITEA_TOKEN=your_gitea_personal_access_token
 GITEA_USERNAME=your_gitea_username
 
-# GitHub Configuration
+# Alternative source provider (GitLab)
+# SOURCE_PROVIDER=gitlab
+# GITLAB_URL=https://gitlab.com
+# GITLAB_TOKEN=your_gitlab_token
+# GITLAB_USERNAME=your_gitlab_username
+
+# Destination Provider Configuration
+DESTINATION_PROVIDER=github
 GITHUB_TOKEN=your_github_personal_access_token
 GITHUB_USERNAME=your_github_username
+
+# Alternative destination provider (GitLab)
+# DESTINATION_PROVIDER=gitlab
+# GITLAB_DEST_URL=https://gitlab.com
+# GITLAB_DEST_TOKEN=your_gitlab_dest_token
+# GITLAB_DEST_USERNAME=your_gitlab_dest_username
 """
         env_file.write_text(template)
         print(f"{Fore.YELLOW}📝 Created .env template file. Please fill it with your credentials.{Style.RESET_ALL}")
@@ -86,7 +107,7 @@ GITHUB_USERNAME=your_github_username
 def main():
     """Main application entry point"""
     parser = argparse.ArgumentParser(
-        description="Migrate repositories from Gitea to GitHub",
+        description="Migrate repositories between Git hosting providers",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -96,6 +117,10 @@ Examples:
   %(prog)s --repos owner/repo1       # Migrate repositories from other owners
   %(prog)s --list                    # List available repositories
   %(prog)s --verbose                 # Enable verbose logging
+  
+Supported providers:
+  Source: """ + ", ".join(ProviderFactory.get_available_source_providers()) + """
+  Destination: """ + ", ".join(ProviderFactory.get_available_destination_providers()) + """
         """
     )
     
@@ -145,23 +170,31 @@ Examples:
     
     try:
         # Initialize configuration
-        config = Config()
+        config = MigrationConfig()
         
-        # Initialize migration tool
-        migration_tool = MigrationTool(config)
+        # Create providers
+        source_provider = ProviderFactory.create_source_provider(
+            config.source_provider, 
+            config.source_config
+        )
+        destination_provider = ProviderFactory.create_destination_provider(
+            config.destination_provider, 
+            config.destination_config
+        )
+        
+        # Initialize migration engine
+        migration_engine = MigrationEngine(source_provider, destination_provider)
         
         # Handle list command
         if args.list:
-            print(f"{Fore.CYAN}📋 Available repositories:{Style.RESET_ALL}")
-            repos = migration_tool.list_available_repos()
+            print(f"{Fore.CYAN}📋 Available repositories from {config.source_provider}:{Style.RESET_ALL}")
+            repos = source_provider.get_accessible_repositories()
             
             for repo in repos:
-                owner = repo['owner']['login']
-                name = repo['name']
-                private = "🔒 Private" if repo.get('private', False) else "🌐 Public"
-                description = repo.get('description', 'No description')
+                private = "🔒 Private" if repo.private else "🌐 Public"
+                description = repo.description or 'No description'
                 
-                print(f"  {Fore.BLUE}{owner}/{name}{Style.RESET_ALL} - {private}")
+                print(f"  {Fore.BLUE}{repo.owner}/{repo.name}{Style.RESET_ALL} - {private}")
                 if description:
                     print(f"    📝 {description}")
             
@@ -171,14 +204,35 @@ Examples:
         # Perform migration
         if args.repos:
             print(f"{Fore.CYAN}🎯 Migrating specific repositories: {', '.join(args.repos)}{Style.RESET_ALL}")
-            results = migration_tool.migrate_specific_repos(args.repos)
+            repositories = []
+            for repo_spec in args.repos:
+                if '/' in repo_spec:
+                    owner, repo_name = repo_spec.split('/', 1)
+                else:
+                    owner = config.source_config['username']
+                    repo_name = repo_spec
+                
+                repo = source_provider.get_repository_info(owner, repo_name)
+                if repo:
+                    repositories.append(repo)
+                else:
+                    print(f"{Fore.RED}⚠️  Repository {owner}/{repo_name} not found or not accessible{Style.RESET_ALL}")
+            
+            results = migration_engine.migrate_repositories(repositories)
         else:
+            # Get all accessible repositories
+            all_repos = source_provider.get_accessible_repositories()
+            
             if args.no_interactive:
                 print(f"{Fore.CYAN}🚀 Migrating all your repositories automatically...{Style.RESET_ALL}")
-                results = migration_tool.migrate_all_accessible_repos(interactive=False)
+                # Filter to only user's repositories
+                user_repos = source_provider.get_user_repositories()
+                results = migration_engine.migrate_repositories(user_repos)
             else:
                 print(f"{Fore.CYAN}🎯 Interactive mode - select repositories to migrate{Style.RESET_ALL}")
-                results = migration_tool.migrate_all_accessible_repos(interactive=True)
+                username = config.source_config['username']
+                selected_repos = select_repositories_interactive(all_repos, username)
+                results = migration_engine.migrate_repositories(selected_repos)
         
         # Print results
         if results:
@@ -186,9 +240,13 @@ Examples:
         else:
             print(f"{Fore.YELLOW}⚠️  No repositories found to migrate.{Style.RESET_ALL}")
             
-    except ValueError as e:
+    except ConfigurationError as e:
         print(f"{Fore.RED}❌ Configuration error: {e}{Style.RESET_ALL}")
         print(f"{Fore.YELLOW}💡 Run '{sys.argv[0]} --setup' to create a configuration template.{Style.RESET_ALL}")
+        sys.exit(1)
+        
+    except (ProviderError, MigrationError) as e:
+        print(f"{Fore.RED}❌ Migration error: {e}{Style.RESET_ALL}")
         sys.exit(1)
         
     except Exception as e:

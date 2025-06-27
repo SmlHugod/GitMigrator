@@ -4,21 +4,22 @@ Interactive repository selector for migration tool
 import sys
 import termios
 import tty
-from typing import List, Dict, Set
+from typing import List, Set
 from colorama import Fore, Style, init
+from providers.base import Repository
 
 init()
 
 class InteractiveSelector:
     """Interactive repository selector with keyboard navigation"""
     
-    def __init__(self, repositories: List[Dict], username: str):
+    def __init__(self, repositories: List[Repository], username: str):
         self.username = username
         # Sort repositories: user's repos first, then others, both alphabetically
         self.repositories = self._sort_repositories(repositories, username)
         # Only select user's own repositories by default
         self.selected = set(i for i, repo in enumerate(self.repositories) 
-                          if repo['owner']['login'] == username)
+                          if repo.owner == username)
         self.current_index = 0
         self.page_size = 15  # Number of repos to show per page
         self.current_page = 0
@@ -73,7 +74,7 @@ class InteractiveSelector:
             is_current = i == self.current_index
             
             # Check if we need to add a separator
-            owner = repo['owner']['login']
+            owner = repo.owner
             is_own_repo = owner == self.username
             current_owner_type = "own" if is_own_repo else "others"
             
@@ -87,11 +88,11 @@ class InteractiveSelector:
             checkbox = "☑️ " if is_selected else "☐ "
             
             # Repository info
-            name = repo['name']
-            private = "🔒" if repo.get('private', False) else "🌐"
+            name = repo.name
+            private = "🔒" if repo.private else "🌐"
             ownership_indicator = "👤" if is_own_repo else "👥"
-            description = repo.get('description', 'No description')[:45]
-            if len(repo.get('description', '')) > 45:
+            description = (repo.description or 'No description')[:45]
+            if len(repo.description or '') > 45:
                 description += "..."
             
             # Highlight current selection
@@ -167,7 +168,20 @@ class InteractiveSelector:
             self.current_page += 1
             self.current_index = self.current_page * self.page_size
     
-    def _rename_repositories_interface(self, selected_repos: List[Dict]) -> List[Dict]:
+    def _sort_repositories(self, repositories: List[Repository], username: str) -> List[Repository]:
+        """Sort repositories: user's repos first, then others, both alphabetically"""
+        def sort_key(repo):
+            owner = repo.owner
+            name = repo.name.lower()  # Case-insensitive sorting
+            is_user_repo = owner == username
+            
+            # Return tuple: (is_not_user_repo, owner.lower(), name)
+            # This will sort user repos first (False < True), then alphabetically
+            return (not is_user_repo, owner.lower(), name)
+        
+        return sorted(repositories, key=sort_key)
+    
+    def _rename_repositories_interface(self, selected_repos: List[Repository]) -> List[Repository]:
         """Interface for renaming selected repositories"""
         print('\033[2J\033[H', end='')  # Clear screen
         
@@ -182,9 +196,9 @@ class InteractiveSelector:
         renamed_repos = []
         
         for i, repo in enumerate(selected_repos, 1):
-            owner = repo['owner']['login']
-            original_name = repo['name']
-            private = "🔒" if repo.get('private', False) else "🌐"
+            owner = repo.owner
+            original_name = repo.name
+            private = "🔒" if repo.private else "🌐"
             
             print(f"{Fore.YELLOW}📦 Repository {i}/{len(selected_repos)}:{Style.RESET_ALL}")
             print(f"   Source: {Fore.BLUE}{owner}/{original_name}{Style.RESET_ALL} {private}")
@@ -204,10 +218,9 @@ class InteractiveSelector:
                 new_name = original_name
                 print(f"   {Fore.CYAN}ℹ️  Keeping original name: {original_name}{Style.RESET_ALL}")
             
-            # Create new repo dict with updated name
-            renamed_repo = repo.copy()
-            renamed_repo['github_name'] = new_name  # Add field for GitHub name
-            renamed_repos.append(renamed_repo)
+            # Update repository with new GitHub name
+            repo.github_name = new_name
+            renamed_repos.append(repo)
             print()
         
         # Summary
@@ -215,10 +228,10 @@ class InteractiveSelector:
         print(f"\n{Fore.CYAN}📋 Migration summary:{Style.RESET_ALL}")
         
         for repo in renamed_repos:
-            owner = repo['owner']['login']
-            original_name = repo['name']
-            github_name = repo['github_name']
-            private = "🔒" if repo.get('private', False) else "🌐"
+            owner = repo.owner
+            original_name = repo.name
+            github_name = repo.github_name
+            private = "🔒" if repo.private else "🌐"
             
             if original_name != github_name:
                 print(f"  • {Fore.BLUE}{owner}/{original_name}{Style.RESET_ALL} → {Fore.GREEN}{github_name}{Style.RESET_ALL} {private}")
@@ -227,19 +240,6 @@ class InteractiveSelector:
         
         input(f"\n{Fore.YELLOW}Press ENTER to continue...{Style.RESET_ALL}")
         return renamed_repos
-    
-    def _sort_repositories(self, repositories: List[Dict], username: str) -> List[Dict]:
-        """Sort repositories: user's repos first, then others, both alphabetically"""
-        def sort_key(repo):
-            owner = repo['owner']['login']
-            name = repo['name'].lower()  # Case-insensitive sorting
-            is_user_repo = owner == username
-            
-            # Return tuple: (is_not_user_repo, owner.lower(), name)
-            # This will sort user repos first (False < True), then alphabetically
-            return (not is_user_repo, owner.lower(), name)
-        
-        return sorted(repositories, key=sort_key)
     
     def _is_valid_repo_name(self, name: str) -> bool:
         """Validate GitHub repository name"""
@@ -258,7 +258,7 @@ class InteractiveSelector:
         import re
         return bool(re.match(r'^[a-zA-Z0-9._-]+$', name))
     
-    def run(self) -> List[Dict]:
+    def run(self) -> List[Repository]:
         """Run interactive selection and return selected repositories"""
         if not self.repositories:
             print(f"{Fore.YELLOW}⚠️  No repositories found.{Style.RESET_ALL}")
@@ -301,9 +301,9 @@ class InteractiveSelector:
         print(f"{Fore.GREEN}✅ Selected {len(selected_repos)} repositories for migration:{Style.RESET_ALL}\n")
         
         for repo in selected_repos:
-            owner = repo['owner']['login']
-            name = repo['name']
-            private = "🔒" if repo.get('private', False) else "🌐"
+            owner = repo.owner
+            name = repo.name
+            private = "🔒" if repo.private else "🌐"
             print(f"  • {Fore.BLUE}{owner}/{name}{Style.RESET_ALL} {private}")
         
         # Ask if user wants to rename repositories
@@ -321,12 +321,12 @@ class InteractiveSelector:
         return selected_repos
 
 
-def select_repositories_interactive(repositories: List[Dict], username: str) -> List[Dict]:
+def select_repositories_interactive(repositories: List[Repository], username: str) -> List[Repository]:
     """
     Interactive repository selection interface
     
     Args:
-        repositories: List of repository dictionaries from Gitea API
+        repositories: List of Repository objects from source provider
         username: Current user's username to distinguish own repos
         
     Returns:
