@@ -53,11 +53,13 @@ GitMigrator/
 
 #### Source Providers (`providers/source/`)
 - **Gitea**: Implementation for Gitea
-- **GitLab**: Implementation for GitLab (extensibility example)
+- **GitLab**: Implementation for GitLab 
+- **GitHub**: Implementation for GitHub
 
 #### Destination Providers (`providers/destination/`)
 - **GitHub**: Implementation for GitHub
-- **GitLab**: Implementation for GitLab (extensibility example)
+- **GitLab**: Implementation for GitLab 
+- **Gitea**: Implementation for Gitea
 
 ### ⚙ Core (`core/`)
 
