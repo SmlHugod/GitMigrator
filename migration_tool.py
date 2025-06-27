@@ -55,9 +55,18 @@ class MigrationTool:
         for repo in selected_repos:
             repo_name = repo['name']
             repo_owner = repo['owner']['login']
-            logger.info(f"Migrating repository: {repo_owner}/{repo_name}")
+            github_name = repo.get('github_name', repo_name)  # Use renamed name if available
+            
+            if github_name != repo_name:
+                logger.info(f"Migrating repository: {repo_owner}/{repo_name} → {github_name}")
+            else:
+                logger.info(f"Migrating repository: {repo_owner}/{repo_name}")
+            
             success = self.migrate_repository(repo)
-            results[f"{repo_owner}/{repo_name}"] = success
+            display_name = f"{repo_owner}/{repo_name}"
+            if github_name != repo_name:
+                display_name += f" → {github_name}"
+            results[display_name] = success
         
         return results
     
@@ -91,11 +100,12 @@ class MigrationTool:
         """Migrate a single repository"""
         repo_name = repo_info['name']
         repo_owner = repo_info['owner']['login']
+        github_name = repo_info.get('github_name', repo_name)  # Use renamed name if available
         
         try:
-            # Create GitHub repository
+            # Create GitHub repository with the (possibly renamed) name
             success = self.github_client.create_repository(
-                repo_name=repo_name,
+                repo_name=github_name,
                 description=repo_info.get('description', ''),
                 private=repo_info.get('private', False)
             )
@@ -104,14 +114,17 @@ class MigrationTool:
                 return False
             
             # Clone and push repository
-            return self._clone_and_push_repo(repo_owner, repo_name)
+            return self._clone_and_push_repo(repo_owner, repo_name, github_name)
             
         except Exception as e:
             logger.error(f"Failed to migrate repository {repo_name}: {e}")
             return False
     
-    def _clone_and_push_repo(self, repo_owner: str, repo_name: str) -> bool:
+    def _clone_and_push_repo(self, repo_owner: str, repo_name: str, github_name: str = None) -> bool:
         """Clone repository from Gitea and push to GitHub"""
+        if github_name is None:
+            github_name = repo_name
+            
         temp_dir = None
         original_cwd = os.getcwd()  # Save original working directory
         
@@ -138,7 +151,7 @@ class MigrationTool:
             
             # Add GitHub remote (run command in the repository directory)
             github_url = self.github_client.get_authenticated_clone_url(
-                repo_name, 
+                github_name,  # Use the GitHub name (possibly renamed)
                 self.config.github_token
             )
             
@@ -150,15 +163,31 @@ class MigrationTool:
                 return False
             
             # Push to GitHub (run command in the repository directory)
-            logger.info(f"Pushing repository to GitHub: {repo_name}")
-            push_cmd = ['git', 'push', '--mirror', 'github']
-            result = subprocess.run(push_cmd, capture_output=True, text=True, cwd=str(repo_path))
+            if github_name != repo_name:
+                logger.info(f"Pushing repository to GitHub: {repo_name} → {github_name}")
+            else:
+                logger.info(f"Pushing repository to GitHub: {repo_name}")
+            
+            # Push branches first
+            push_branches_cmd = ['git', 'push', '--all', 'github']
+            result = subprocess.run(push_branches_cmd, capture_output=True, text=True, cwd=str(repo_path))
             
             if result.returncode != 0:
-                logger.error(f"Failed to push to GitHub: {result.stderr}")
+                logger.error(f"Failed to push branches to GitHub: {result.stderr}")
                 return False
             
-            logger.info(f"Successfully migrated repository: {repo_name}")
+            # Push tags
+            push_tags_cmd = ['git', 'push', '--tags', 'github']
+            result = subprocess.run(push_tags_cmd, capture_output=True, text=True, cwd=str(repo_path))
+            
+            if result.returncode != 0:
+                logger.warning(f"Failed to push tags to GitHub (this is often normal): {result.stderr}")
+                # Don't fail the migration if only tags fail
+            
+            if github_name != repo_name:
+                logger.info(f"Successfully migrated repository: {repo_name} → {github_name}")
+            else:
+                logger.info(f"Successfully migrated repository: {repo_name}")
             return True
             
         except Exception as e:
@@ -178,6 +207,8 @@ class MigrationTool:
                     shutil.rmtree(temp_dir, ignore_errors=True)
                 except Exception as e:
                     logger.warning(f"Failed to clean up temporary directory {temp_dir}: {e}")
+    
+
     
     def _get_authenticated_gitea_url(self, owner: str, repo_name: str) -> str:
         """Get authenticated Gitea URL for cloning"""

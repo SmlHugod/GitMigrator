@@ -8,6 +8,7 @@ Ce projet fournit un outil pratique et modulable pour migrer vos repositories de
 - **Mode interactif par défaut** : Interface élégante pour sélectionner/déselectionner les repos à migrer
 - **Vision complète** : Voit tous les repositories accessibles (vos repos + ceux d'organisations)
 - **Sélection intelligente** : Vos repositories sont pré-sélectionnés, les autres sont désélectionnés par défaut
+- **Renommage intelligent** : Possibilité de renommer les repositories lors de la migration
 - **Migration sélective** : Choisissez spécifiquement quels repositories migrer en ligne de commande
 - **Interface en ligne de commande** : Interface colorée et intuitive avec navigation au clavier
 - **Logging complet** : Suivi détaillé des opérations avec fichier de log
@@ -104,15 +105,23 @@ Le mode interactif (activé par défaut) offre une **interface utilisateur élé
 - **ESPACE** : Cocher/décocher un repository
 - **A** : Sélectionner tous les repositories
 - **N** : Désélectionner tous les repositories
-- **ENTRÉE** : Confirmer la sélection et lancer la migration
+- **ENTRÉE** : Confirmer la sélection et passer au renommage (optionnel)
 - **Q** : Quitter sans migrer
+
+### Interface de renommage :
+Après la sélection, l'outil propose de renommer les repositories :
+- **Y** : Ouvrir l'interface de renommage
+- **N/ENTRÉE** : Conserver les noms actuels
+- **Validation automatique** des noms de repositories GitHub
 
 ### Fonctionnalités :
 - ✅ **Checkboxes visuelles** avec émojis
 - 👤 **Distinction propriétaire** : Vos repos vs repos d'autres utilisateurs
 - 🎯 **Sélection intelligente** : Vos repos pré-sélectionnés par défaut
+- 📋 **Tri intelligent** : Vos repos en premier, puis les autres, tous par ordre alphabétique
+- ✏️ **Renommage optionnel** : Possibilité de renommer les repos sur GitHub
 - 📄 **Pagination automatique** (15 repos par page)
-- 🎨 **Interface colorée** avec mise en surbrillance
+- 🎨 **Interface colorée** avec mise en surbrillance et séparateurs visuels
 - 📊 **Compteur en temps réel** des repos sélectionnés
 - 🔒 **Indicateurs visuels** (privé/public)
 - 📝 **Descriptions tronquées** pour un affichage propre
@@ -154,8 +163,21 @@ nano .env
 # 3. Listez vos repositories disponibles
 ./run.sh --list
 
-# 4. Lancez la migration
+# 4. Lancez la migration interactive
 ./run.sh
+```
+
+### Exemple 6 : Migration avec renommage
+```bash
+# 1. Lancer le mode interactif
+./run.sh
+
+# 2. Sélectionner les repos à migrer
+# 3. Choisir "Y" pour le renommage
+# 4. Renommer les repos un par un
+#    - Appuyer sur ENTRÉE pour garder le nom original
+#    - Taper un nouveau nom pour renommer
+# 5. Confirmer et lancer la migration
 ```
 
 ## 📊 Résultats
