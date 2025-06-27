@@ -90,7 +90,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s                           # Migrate all your repositories
+  %(prog)s                           # Interactive mode (default): select repositories
+  %(prog)s --no-interactive          # Migrate all your repositories automatically
   %(prog)s --repos repo1 repo2       # Migrate specific repositories
   %(prog)s --repos owner/repo1       # Migrate repositories from other owners
   %(prog)s --list                    # List available repositories
@@ -120,6 +121,12 @@ Examples:
         '--setup', 
         action='store_true', 
         help='Create .env template file'
+    )
+    
+    parser.add_argument(
+        '--no-interactive',
+        action='store_true',
+        help='Skip interactive mode: migrate all your repositories automatically'
     )
     
     args = parser.parse_args()
@@ -166,8 +173,12 @@ Examples:
             print(f"{Fore.CYAN}🎯 Migrating specific repositories: {', '.join(args.repos)}{Style.RESET_ALL}")
             results = migration_tool.migrate_specific_repos(args.repos)
         else:
-            print(f"{Fore.CYAN}🚀 Migrating all your repositories...{Style.RESET_ALL}")
-            results = migration_tool.migrate_all_user_repos()
+            if args.no_interactive:
+                print(f"{Fore.CYAN}🚀 Migrating all your repositories automatically...{Style.RESET_ALL}")
+                results = migration_tool.migrate_all_accessible_repos(interactive=False)
+            else:
+                print(f"{Fore.CYAN}🎯 Interactive mode - select repositories to migrate{Style.RESET_ALL}")
+                results = migration_tool.migrate_all_accessible_repos(interactive=True)
         
         # Print results
         if results:

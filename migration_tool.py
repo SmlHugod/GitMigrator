@@ -12,6 +12,7 @@ from pathlib import Path
 from config import Config
 from gitea_client import GiteaClient
 from github_client import GitHubClient
+from interactive_selector import select_repositories_interactive
 
 logger = logging.getLogger(__name__)
 
@@ -30,18 +31,33 @@ class MigrationTool:
             config.github_username
         )
     
-    def migrate_all_user_repos(self) -> Dict[str, bool]:
-        """Migrate all repositories owned by the user"""
-        logger.info("Fetching user repositories from Gitea...")
-        repos = self.gitea_client.get_user_repos()
+    def migrate_all_accessible_repos(self, interactive: bool = True) -> Dict[str, bool]:
+        """Migrate repositories with interactive selection (default) or all user repos"""
+        logger.info("Fetching accessible repositories from Gitea...")
+        repos = self.gitea_client.list_accessible_repos()
+        
+        if not repos:
+            logger.warning("No repositories found")
+            return {}
+        
+        # Interactive selection (default behavior)
+        if interactive:
+            selected_repos = select_repositories_interactive(repos, self.config.gitea_username)
+        else:
+            # Non-interactive: only user's own repositories
+            selected_repos = [repo for repo in repos if repo['owner']['login'] == self.config.gitea_username]
+        
+        if not selected_repos:
+            logger.info("No repositories selected for migration")
+            return {}
         
         results = {}
-        for repo in repos:
-            if repo['owner']['login'] == self.config.gitea_username:
-                repo_name = repo['name']
-                logger.info(f"Migrating repository: {repo_name}")
-                success = self.migrate_repository(repo)
-                results[repo_name] = success
+        for repo in selected_repos:
+            repo_name = repo['name']
+            repo_owner = repo['owner']['login']
+            logger.info(f"Migrating repository: {repo_owner}/{repo_name}")
+            success = self.migrate_repository(repo)
+            results[f"{repo_owner}/{repo_name}"] = success
         
         return results
     
@@ -97,6 +113,7 @@ class MigrationTool:
     def _clone_and_push_repo(self, repo_owner: str, repo_name: str) -> bool:
         """Clone repository from Gitea and push to GitHub"""
         temp_dir = None
+        original_cwd = os.getcwd()  # Save original working directory
         
         try:
             # Create temporary directory
@@ -108,32 +125,34 @@ class MigrationTool:
             clone_cmd = ['git', 'clone', '--mirror', gitea_url, str(repo_path)]
             
             logger.info(f"Cloning repository from Gitea: {repo_owner}/{repo_name}")
-            result = subprocess.run(clone_cmd, capture_output=True, text=True)
+            result = subprocess.run(clone_cmd, capture_output=True, text=True, cwd=temp_dir)
             
             if result.returncode != 0:
                 logger.error(f"Failed to clone repository: {result.stderr}")
                 return False
             
-            # Change to repository directory
-            os.chdir(repo_path)
+            # Verify repository was cloned successfully
+            if not repo_path.exists():
+                logger.error(f"Repository directory not found after cloning: {repo_path}")
+                return False
             
-            # Add GitHub remote
+            # Add GitHub remote (run command in the repository directory)
             github_url = self.github_client.get_authenticated_clone_url(
                 repo_name, 
                 self.config.github_token
             )
             
             add_remote_cmd = ['git', 'remote', 'add', 'github', github_url]
-            result = subprocess.run(add_remote_cmd, capture_output=True, text=True)
+            result = subprocess.run(add_remote_cmd, capture_output=True, text=True, cwd=str(repo_path))
             
             if result.returncode != 0:
                 logger.error(f"Failed to add GitHub remote: {result.stderr}")
                 return False
             
-            # Push to GitHub
+            # Push to GitHub (run command in the repository directory)
             logger.info(f"Pushing repository to GitHub: {repo_name}")
             push_cmd = ['git', 'push', '--mirror', 'github']
-            result = subprocess.run(push_cmd, capture_output=True, text=True)
+            result = subprocess.run(push_cmd, capture_output=True, text=True, cwd=str(repo_path))
             
             if result.returncode != 0:
                 logger.error(f"Failed to push to GitHub: {result.stderr}")
@@ -147,9 +166,18 @@ class MigrationTool:
             return False
             
         finally:
+            # Restore original working directory
+            try:
+                os.chdir(original_cwd)
+            except Exception as e:
+                logger.warning(f"Failed to restore original working directory: {e}")
+            
             # Clean up temporary directory
             if temp_dir and os.path.exists(temp_dir):
-                shutil.rmtree(temp_dir, ignore_errors=True)
+                try:
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+                except Exception as e:
+                    logger.warning(f"Failed to clean up temporary directory {temp_dir}: {e}")
     
     def _get_authenticated_gitea_url(self, owner: str, repo_name: str) -> str:
         """Get authenticated Gitea URL for cloning"""

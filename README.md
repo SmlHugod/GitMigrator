@@ -5,9 +5,11 @@ Ce projet fournit un outil pratique et modulable pour migrer vos repositories de
 ## ✨ Fonctionnalités
 
 - **Migration automatique** : Migre tous vos repositories Gitea vers GitHub en une seule commande
-- **Migration sélective** : Choisissez spécifiquement quels repositories migrer
-- **Support multi-propriétaire** : Migrez des repositories d'autres utilisateurs/organisations auxquels vous avez accès
-- **Interface en ligne de commande** : Interface colorée et intuitive
+- **🎯 Mode interactif par défaut** : Interface élégante pour sélectionner/déselectionner les repos à migrer
+- **Vision complète** : Voit tous les repositories accessibles (vos repos + ceux d'organisations)
+- **Sélection intelligente** : Vos repositories sont pré-sélectionnés, les autres sont désélectionnés par défaut
+- **Migration sélective** : Choisissez spécifiquement quels repositories migrer en ligne de commande
+- **Interface en ligne de commande** : Interface colorée et intuitive avec navigation au clavier
 - **Logging complet** : Suivi détaillé des opérations avec fichier de log
 - **Gestion des erreurs** : Robuste avec gestion gracieuse des erreurs
 
@@ -61,9 +63,14 @@ GITHUB_USERNAME=votre_nom_utilisateur_github
 
 Après avoir configuré vos tokens dans le fichier `.env`, utilisez le script de lancement :
 
-### Migration de tous vos repositories
+### Migration interactive (par défaut)
 ```bash
 ./run.sh
+```
+
+### Migration automatique de tous vos repos
+```bash
+./run.sh --no-interactive
 ```
 
 ### Migration de repositories spécifiques
@@ -88,27 +95,60 @@ Après avoir configuré vos tokens dans le fichier `.env`, utilisez le script de
 
 > **💡 Alternative** : Vous pouvez aussi utiliser directement `python migrate.py` si vous avez activé l'environnement virtuel (`source venv/bin/activate`)
 
+## 🎯 Mode Interactif
+
+Le mode interactif (activé par défaut) offre une **interface utilisateur élégante** pour sélectionner précisément quels repositories migrer :
+
+```bash
+./run.sh  # Mode interactif par défaut
+```
+
+### Contrôles dans l'interface interactive :
+- **↑↓** : Naviguer entre les repositories
+- **←→** : Changer de page (si beaucoup de repos)
+- **ESPACE** : Cocher/décocher un repository
+- **A** : Sélectionner tous les repositories
+- **N** : Désélectionner tous les repositories
+- **ENTRÉE** : Confirmer la sélection et lancer la migration
+- **Q** : Quitter sans migrer
+
+### Fonctionnalités :
+- ✅ **Checkboxes visuelles** avec émojis
+- 👤 **Distinction propriétaire** : Vos repos vs repos d'autres utilisateurs
+- 🎯 **Sélection intelligente** : Vos repos pré-sélectionnés par défaut
+- 📄 **Pagination automatique** (15 repos par page)
+- 🎨 **Interface colorée** avec mise en surbrillance
+- 📊 **Compteur en temps réel** des repos sélectionnés
+- 🔒 **Indicateurs visuels** (privé/public)
+- 📝 **Descriptions tronquées** pour un affichage propre
+
 ## 📋 Exemples d'utilisation
 
-### Exemple 1 : Migration complète
+### Exemple 1 : Migration interactive (défaut)
 ```bash
-# Migre tous vos repositories
+# Interface interactive pour sélectionner les repos
 ./run.sh
 ```
 
-### Exemple 2 : Migration sélective
+### Exemple 2 : Migration automatique
+```bash
+# Migre tous vos repositories automatiquement
+./run.sh --no-interactive
+```
+
+### Exemple 3 : Migration sélective
 ```bash
 # Migre seulement les repositories spécifiés
 ./run.sh --repos projet-web api-backend
 ```
 
-### Exemple 3 : Migration depuis une organisation
+### Exemple 4 : Migration depuis une organisation
 ```bash
 # Migre un repository d'une organisation
 ./run.sh --repos mon-org/projet-important
 ```
 
-### Exemple 4 : Premier lancement (configuration)
+### Exemple 5 : Premier lancement (configuration)
 ```bash
 # 1. Setup initial
 ./run.sh --setup

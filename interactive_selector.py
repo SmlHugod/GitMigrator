@@ -1,0 +1,223 @@
+"""
+Interactive repository selector for migration tool
+"""
+import sys
+import termios
+import tty
+from typing import List, Dict, Set
+from colorama import Fore, Style, init
+
+init()
+
+class InteractiveSelector:
+    """Interactive repository selector with keyboard navigation"""
+    
+    def __init__(self, repositories: List[Dict], username: str):
+        self.repositories = repositories
+        self.username = username
+        # Only select user's own repositories by default
+        self.selected = set(i for i, repo in enumerate(repositories) 
+                          if repo['owner']['login'] == username)
+        self.current_index = 0
+        self.page_size = 15  # Number of repos to show per page
+        self.current_page = 0
+        
+    def get_key(self):
+        """Get a single keypress from stdin"""
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            key = sys.stdin.read(1)
+            # Handle arrow keys and special keys
+            if key == '\x1b':  # ESC sequence
+                key += sys.stdin.read(2)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return key
+    
+    def display_page(self):
+        """Display current page of repositories"""
+        # Clear screen
+        print('\033[2J\033[H', end='')
+        
+        # Header
+        print(f"{Fore.CYAN}╔═══════════════════════════════════════════════════════════════╗")
+        print(f"║                  📋 SELECT REPOSITORIES                      ║")
+        print(f"║                                                               ║")
+        print(f"║  👤 = Your repos (selected by default)  👥 = Others' repos   ║")
+        print(f"║  ↑↓ navigate, SPACE toggle, A all, N none, ENTER confirm     ║")
+        print(f"╚═══════════════════════════════════════════════════════════════╝{Style.RESET_ALL}")
+        print()
+        
+        # Calculate pagination
+        start_idx = self.current_page * self.page_size
+        end_idx = min(start_idx + self.page_size, len(self.repositories))
+        
+        # Show page info
+        total_pages = (len(self.repositories) + self.page_size - 1) // self.page_size
+        selected_count = len(self.selected)
+        total_count = len(self.repositories)
+        
+        print(f"{Fore.YELLOW}📊 Page {self.current_page + 1}/{total_pages} | "
+              f"Selected: {selected_count}/{total_count} repositories{Style.RESET_ALL}")
+        print()
+        
+        # Display repositories for current page
+        for i in range(start_idx, end_idx):
+            repo = self.repositories[i]
+            is_selected = i in self.selected
+            is_current = i == self.current_index
+            
+            # Checkbox
+            checkbox = "☑️ " if is_selected else "☐ "
+            
+            # Repository info
+            owner = repo['owner']['login']
+            name = repo['name']
+            private = "🔒" if repo.get('private', False) else "🌐"
+            is_own_repo = owner == self.username
+            ownership_indicator = "👤" if is_own_repo else "👥"
+            description = repo.get('description', 'No description')[:45]
+            if len(repo.get('description', '')) > 45:
+                description += "..."
+            
+            # Highlight current selection
+            if is_current:
+                line = f"{Fore.BLACK}{Style.BRIGHT}> {checkbox}{ownership_indicator} {Fore.BLUE}{owner}/{name}{Style.RESET_ALL}"
+                line += f"{Fore.BLACK}{Style.BRIGHT} {private} - {description}{Style.RESET_ALL}"
+            else:
+                if is_own_repo:
+                    color = Fore.GREEN if is_selected else Fore.WHITE
+                else:
+                    color = Fore.YELLOW if is_selected else Fore.LIGHTBLACK_EX
+                line = f"  {checkbox}{ownership_indicator} {color}{owner}/{name}{Style.RESET_ALL}"
+                line += f" {private} - {Fore.LIGHTBLACK_EX}{description}{Style.RESET_ALL}"
+            
+            print(line)
+        
+        # Navigation help at bottom
+        print()
+        nav_help = []
+        if self.current_page > 0:
+            nav_help.append("← PREV PAGE")
+        if self.current_page < total_pages - 1:
+            nav_help.append("→ NEXT PAGE")
+        
+        if nav_help:
+            print(f"{Fore.CYAN}Navigation: {' | '.join(nav_help)}{Style.RESET_ALL}")
+        
+        print(f"\n{Fore.GREEN}Press ENTER to continue with selected repositories{Style.RESET_ALL}")
+        print(f"{Fore.RED}Press Q to quit{Style.RESET_ALL}")
+    
+    def move_up(self):
+        """Move selection up"""
+        if self.current_index > 0:
+            self.current_index -= 1
+            # Check if we need to go to previous page
+            if self.current_index < self.current_page * self.page_size:
+                self.current_page = max(0, self.current_page - 1)
+    
+    def move_down(self):
+        """Move selection down"""
+        if self.current_index < len(self.repositories) - 1:
+            self.current_index += 1
+            # Check if we need to go to next page
+            total_pages = (len(self.repositories) + self.page_size - 1) // self.page_size
+            if self.current_index >= (self.current_page + 1) * self.page_size:
+                self.current_page = min(total_pages - 1, self.current_page + 1)
+    
+    def toggle_current(self):
+        """Toggle selection of current repository"""
+        if self.current_index in self.selected:
+            self.selected.remove(self.current_index)
+        else:
+            self.selected.add(self.current_index)
+    
+    def select_all(self):
+        """Select all repositories"""
+        self.selected = set(range(len(self.repositories)))
+    
+    def select_none(self):
+        """Deselect all repositories"""
+        self.selected.clear()
+    
+    def prev_page(self):
+        """Go to previous page"""
+        if self.current_page > 0:
+            self.current_page -= 1
+            self.current_index = self.current_page * self.page_size
+    
+    def next_page(self):
+        """Go to next page"""
+        total_pages = (len(self.repositories) + self.page_size - 1) // self.page_size
+        if self.current_page < total_pages - 1:
+            self.current_page += 1
+            self.current_index = self.current_page * self.page_size
+    
+    def run(self) -> List[Dict]:
+        """Run interactive selection and return selected repositories"""
+        if not self.repositories:
+            print(f"{Fore.YELLOW}⚠️  No repositories found.{Style.RESET_ALL}")
+            return []
+        
+        try:
+            while True:
+                self.display_page()
+                key = self.get_key()
+                
+                if key == '\x1b[A':  # Up arrow
+                    self.move_up()
+                elif key == '\x1b[B':  # Down arrow
+                    self.move_down()
+                elif key == '\x1b[D':  # Left arrow (previous page)
+                    self.prev_page()
+                elif key == '\x1b[C':  # Right arrow (next page)
+                    self.next_page()
+                elif key == ' ':  # Space - toggle selection
+                    self.toggle_current()
+                elif key.lower() == 'a':  # Select all
+                    self.select_all()
+                elif key.lower() == 'n':  # Select none
+                    self.select_none()
+                elif key == '\r' or key == '\n':  # Enter - confirm
+                    break
+                elif key.lower() == 'q':  # Quit
+                    print(f"\n{Fore.YELLOW}🚪 Migration cancelled by user.{Style.RESET_ALL}")
+                    sys.exit(0)
+        
+        except KeyboardInterrupt:
+            print(f"\n{Fore.YELLOW}🚪 Migration cancelled by user.{Style.RESET_ALL}")
+            sys.exit(0)
+        
+        # Return selected repositories
+        selected_repos = [self.repositories[i] for i in sorted(self.selected)]
+        
+        # Clear screen and show summary
+        print('\033[2J\033[H', end='')
+        print(f"{Fore.GREEN}✅ Selected {len(selected_repos)} repositories for migration:{Style.RESET_ALL}\n")
+        
+        for repo in selected_repos:
+            owner = repo['owner']['login']
+            name = repo['name']
+            private = "🔒" if repo.get('private', False) else "🌐"
+            print(f"  • {Fore.BLUE}{owner}/{name}{Style.RESET_ALL} {private}")
+        
+        print(f"\n{Fore.CYAN}🚀 Starting migration...{Style.RESET_ALL}\n")
+        
+        return selected_repos
+
+
+def select_repositories_interactive(repositories: List[Dict], username: str) -> List[Dict]:
+    """
+    Interactive repository selection interface
+    
+    Args:
+        repositories: List of repository dictionaries from Gitea API
+        username: Current user's username to distinguish own repos
+        
+    Returns:
+        List of selected repositories
+    """
+    selector = InteractiveSelector(repositories, username)
+    return selector.run() 
